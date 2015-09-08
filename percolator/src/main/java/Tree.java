@@ -38,12 +38,11 @@ public class Tree {
         return i;
     }
     
-    public boolean pathExists(int i, int j) {
+    public boolean connected(int i, int j) {
         return root(i) == root(j);
     }
-    
-    public boolean isIsolated(int i) {
+
+    public boolean find(int i) {
         return pointers[i] == i;
     }
-    
 }

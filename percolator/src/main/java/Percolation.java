@@ -49,7 +49,7 @@ public class Percolation {
     public boolean isFull(int i, int j) {
         checkBoundary(i, j);
         int pos = calculatePos(i, j);
-        return tree.pathExists(0, pos);
+        return tree.connected(0, pos);
     }
     
     private boolean isOpen0(int i, int j) {
@@ -68,7 +68,7 @@ public class Percolation {
     
     // does the system percolate?
     public boolean percolates() {
-        return tree.pathExists(0, n*n+1);
+        return tree.connected(0, n*n+1);
     }
     
     private void checkBoundary(int i, int j) {

@@ -1,28 +1,56 @@
+import edu.princeton.cs.algs4.Stopwatch;
+
+import edu.princeton.cs.algs4.StdStats;
+import edu.princeton.cs.algs4.StdRandom;
+
 
 public class PercolationStats {
+   private int N;
+   private int T;
+   private double[] percolatedAt;
    public PercolationStats(int N, int T) {
-       // perform T independent experiments on an N-by-N grid
-       throw new IllegalStateException("Not implemented");
+       this.N = N;
+       this.T = T;
+       this.percolatedAt = new double[T];
+       for (int expNumber=0; expNumber < T; expNumber++) {
+           Percolation percolation = new Percolation(N);
+           
+           int openSites = 0;
+           while (!percolation.percolates()) {
+               int i = StdRandom.uniform(1, N+1);
+               int j = StdRandom.uniform(1, N+1);
+               if (percolation.isOpen(i, j))
+                   continue; 
+               
+               percolation.open(i, j);
+               openSites++;
+           }
+           
+           percolatedAt[expNumber] = ((double) openSites) / (double) (N*N);
+       }
    }
+   
    public double mean() {
-       // sample mean of percolation threshold\
-       throw new IllegalStateException("Not implemented");
+       return StdStats.mean(percolatedAt);
    }
    public double stddev() {
-       // sample standard deviation of percolation threshold
-       throw new IllegalStateException("Not implemented");
+       return StdStats.stddev(percolatedAt);
    }
    public double confidenceLo() {
-       // low  endpoint of 95% confidence interval
-       throw new IllegalStateException("Not implemented");
+       return mean() + 1.96*stddev()/Math.sqrt(T);
    }
    public double confidenceHi() {
-       // high endpoint of 95% confidence interval
-       throw new IllegalStateException("Not implemented");
+       return mean() + 1.96*stddev()/Math.sqrt(T);
    }
 
    public static void main(String[] args) {
-       // test client (described below)
-       throw new IllegalStateException("Not implemented");
+       int n = Integer.parseInt(args[0]);
+       int t = Integer.parseInt(args[1]);
+       Stopwatch stopWatch = new Stopwatch();
+       PercolationStats stats = new PercolationStats(n, t);
+       System.out.println("Elapsed: " +        stopWatch.elapsedTime());
+       System.out.println("Mean: " + stats.mean());
+       System.out.println("Std: " + stats.stddev());
+       System.out.printf("Confint: %s, %s\n", stats.confidenceLo(), stats.confidenceHi());
    }
 }
