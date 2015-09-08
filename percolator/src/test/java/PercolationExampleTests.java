@@ -39,7 +39,7 @@ public class PercolationExampleTests {
     }
     
     @Test
-    public void newlyConnectedSiteShouldBeConnected() throws Exception {
+    public void test() throws Exception {
         File file = new File(fixtureDir, fileName);
         BufferedReader reader = new BufferedReader(new FileReader(file));
         String sizeStr = reader.readLine();

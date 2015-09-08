@@ -1,18 +1,20 @@
 import edu.princeton.cs.algs4.Stopwatch;
-
 import edu.princeton.cs.algs4.StdStats;
 import edu.princeton.cs.algs4.StdRandom;
 
 
 public class PercolationStats {
-   private int N;
    private int T;
    private double[] percolatedAt;
    public PercolationStats(int N, int T) {
-       this.N = N;
+       if (N <= 0)
+           throw new IllegalArgumentException();
+       if (T <= 0)
+           throw new IllegalArgumentException();
+       
        this.T = T;
        this.percolatedAt = new double[T];
-       for (int expNumber=0; expNumber < T; expNumber++) {
+       for (int expNumber = 0; expNumber < T; expNumber++) {
            Percolation percolation = new Percolation(N);
            
            int openSites = 0;
@@ -33,12 +35,15 @@ public class PercolationStats {
    public double mean() {
        return StdStats.mean(percolatedAt);
    }
+   
    public double stddev() {
        return StdStats.stddev(percolatedAt);
    }
+   
    public double confidenceLo() {
-       return mean() + 1.96*stddev()/Math.sqrt(T);
+       return mean() - 1.96*stddev()/Math.sqrt(T);
    }
+   
    public double confidenceHi() {
        return mean() + 1.96*stddev()/Math.sqrt(T);
    }

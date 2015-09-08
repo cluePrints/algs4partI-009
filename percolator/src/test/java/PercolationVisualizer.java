@@ -78,7 +78,7 @@ public class PercolationVisualizer {
             int i = in.readInt();
             int j = in.readInt();
             System.out.printf("%s %s\n", i,j);            
-            StdIn.readString();
+            //StdIn.readString();
             
             perc.open(i, j);
             draw(perc, N);

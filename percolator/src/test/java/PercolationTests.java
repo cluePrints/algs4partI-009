@@ -64,12 +64,14 @@ public class PercolationTests {
     }
     
     @Test
-    public void shouldCalculatePositionsCorrectly() {
-        Percolation percolation = new Percolation(8);
-        Assert.assertEquals(1, percolation.calculatePos(1, 1));
-        Assert.assertEquals(2, percolation.calculatePos(1, 2));
-        Assert.assertEquals(9, percolation.calculatePos(2, 1));
-        Assert.assertEquals(64, percolation.calculatePos(8, 8));
+    public void shouldNotAllowTheBackwash() {
+        Percolation percolation = new Percolation(3);
+        percolation.open(1, 3);
+        percolation.open(2, 3);
+        percolation.open(3, 3);
+        
+        percolation.open(3, 1);
+        
+        Assert.assertFalse(percolation.isFull(3, 1));
     }
-    
 }
