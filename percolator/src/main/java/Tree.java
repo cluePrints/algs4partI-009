@@ -1,10 +1,13 @@
 
 
+
 public class Tree {
     private final int[] pointers;
+    private final int[] weights;
     public Tree(int nPointers) {
         super();
         this.pointers = new int[nPointers];
+        this.weights = new int[nPointers];
         for (int i=0; i<this.pointers.length; i++) {
             this.pointers[i] = i;
         }
@@ -17,7 +20,13 @@ public class Tree {
             return;
         }
         
-        pointers[i] = j;
+        if (weights[i] < weights[j]) {
+            pointers[i] = j;
+            weights[j] += weights[i];
+        } else {
+            pointers[j] = i;
+            weights[i] += weights[j];
+        }
     }
     
     public int root(int i) {
