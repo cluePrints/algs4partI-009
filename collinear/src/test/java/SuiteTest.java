@@ -1,8 +1,12 @@
 
+import org.junit.Ignore;
+
 import com.google.common.base.Function;
 import edu.princeton.cs.algs4.In;
 import edu.princeton.cs.algs4.StdDraw;
 import edu.princeton.cs.algs4.StdOut;
+import edu.princeton.cs.algs4.StdRandom;
+import java.util.TreeSet;
 import org.junit.Assert;
 import org.junit.Test;
 
@@ -15,7 +19,7 @@ public class SuiteTest {
     
     @Test
     public void test1() {
-        testOn("src/test/resources/input8.txt", new Fast(), "(3000, 4000) -> (20000, 21000)\n(10000, 0) -> (0, 10000)\n");
+        testOn("src/test/resources/input8.txt", new Fast(), "(10000, 0) -> (0, 10000)\n(3000, 4000) -> (20000, 21000)\n");
     }
     
     @Test
@@ -75,6 +79,27 @@ public class SuiteTest {
     @Test
     public void test11_5() {
         testOn("src/test/resources/test11_5.txt", new Fast(), "(7, 1) -> (7, 8)\n");
+    }
+    
+    @Test
+    public void test11_6() {
+        testOn("src/test/resources/test11_6.txt", new Fast(), "(1, 1) -> (1, 8)\n(6, 0) -> (6, 9)\n");
+    }
+
+    @Ignore    
+    @Test(timeout=5000)
+    public void testPerfEiths() {
+        int n=4096;
+        TreeSet<Point> points = new TreeSet<Point>();
+        while (points.size() < n*8) {
+            points.add(new Point(StdRandom.uniform(n/8), StdRandom.uniform(n)));
+        }
+        
+        long time = System.currentTimeMillis();
+        new FastCollinearPoints(points.toArray(new Point[0]));
+        time = System.currentTimeMillis() - time;
+        System.out.println(time);
+        Assert.assertTrue(time < 2000);
     }
     
     private void testOn(String input, Function<Point[], LineSegment[]> f, String expectedOutput) {
