@@ -28,8 +28,8 @@ public class SuiteTest {
         testOn("src/test/resources/rnd_hseg.txt", new Fast(), "(1354, 18935) -> (20865, 18935)\n"
                 + "(3684, 6527) -> (10380, 6527)\n"
                 + "(9885, 15110) -> (12927, 15110)\n"
-                + "(2075, 9798) -> (20677, 9798)\n"
-                + "(1286, 14234) -> (8373, 14234)\n");
+                + "(1286, 14234) -> (8373, 14234)\n"
+                + "(2075, 9798) -> (20677, 9798)\n");
     }
     
     @Test(expected=IllegalArgumentException.class)
@@ -60,6 +60,21 @@ public class SuiteTest {
     @Test
     public void test11_2() {
         testOn("src/test/resources/test11_2.txt", new Fast(), "");
+    }
+    
+    @Test
+    public void shouldHandlePointsBelongingToMultipleCollinears() {
+        testOn("src/test/resources/test11_3.txt", new Fast(), "(7, 1) -> (3, 9)\n(0, 9) -> (9, 9)\n");
+    }
+    
+    @Test
+    public void test11_4() {
+        testOn("src/test/resources/test11_4.txt", new Fast(), "(9, 0) -> (5, 4)\n(5, 4) -> (5, 8)\n");
+    }
+    
+    @Test
+    public void test11_5() {
+        testOn("src/test/resources/test11_5.txt", new Fast(), "(7, 1) -> (7, 8)\n");
     }
     
     private void testOn(String input, Function<Point[], LineSegment[]> f, String expectedOutput) {
