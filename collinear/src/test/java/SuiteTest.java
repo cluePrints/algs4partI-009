@@ -1,11 +1,14 @@
 
-import org.junit.Ignore;
+import java.util.Collections;
 
+import java.util.Arrays;
 import com.google.common.base.Function;
 import edu.princeton.cs.algs4.In;
 import edu.princeton.cs.algs4.StdDraw;
 import edu.princeton.cs.algs4.StdOut;
 import edu.princeton.cs.algs4.StdRandom;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.TreeSet;
 import org.junit.Assert;
 import org.junit.Test;
@@ -85,11 +88,10 @@ public class SuiteTest {
     public void test11_6() {
         testOn("src/test/resources/test11_6.txt", new Fast(), "(1, 1) -> (1, 8)\n(6, 0) -> (6, 9)\n");
     }
-
-    @Ignore    
+    
     @Test(timeout=5000)
     public void testPerfEiths() {
-        int n=4096;
+        int n=512;
         TreeSet<Point> points = new TreeSet<Point>();
         while (points.size() < n*8) {
             points.add(new Point(StdRandom.uniform(n/8), StdRandom.uniform(n)));
@@ -100,6 +102,28 @@ public class SuiteTest {
         time = System.currentTimeMillis() - time;
         System.out.println(time);
         Assert.assertTrue(time < 2000);
+    }
+    
+    @Test
+    public void test200points() {
+        List<Point> points = new ArrayList<Point>();
+
+        addSegment(points, "(31, 5) -> (21, 25) -> (18, 31) -> (15, 37) -> (13, 41)");
+        addSegment(points, "(6, 0) -> (5, 2) -> (4, 4) -> (3, 6) -> (2, 8) -> (1, 10)");
+        
+        StdRandom.setSeed(10123);
+        Point[] ptsParam = points.toArray(new Point[0]);
+        StdRandom.shuffle(ptsParam);
+        
+        LineSegment[] segments = new FastCollinearPoints(ptsParam).segments();
+        Assert.assertEquals("[(6, 0) -> (1, 10), (31, 5) -> (13, 41)]", Arrays.toString(segments));
+    }
+
+    private void addSegment(List<Point> points, String chain) {
+        for (String item : chain.split(" -> ")) {
+            String[] coordsStr = item.replaceAll("[\\(\\)]", "").split(", ");
+            points.add(new Point(Integer.parseInt(coordsStr[0]), Integer.parseInt(coordsStr[1])));
+        }
     }
     
     private void testOn(String input, Function<Point[], LineSegment[]> f, String expectedOutput) {
@@ -123,14 +147,20 @@ public class SuiteTest {
 
         // print and draw the line segments
         
-        String output = "";
+        List<String> output = new ArrayList<String>();
         for (LineSegment segment : f.apply(points)) {
             StdOut.println(segment);
             segment.draw();
-            output += segment + "\n";
+            output.add(segment.toString());
         }
         
-        Assert.assertEquals(expectedOutput, output);
+        String[] expectedOutputArr = expectedOutput.split("\n");
+        Arrays.sort(expectedOutputArr);
+        Collections.sort(output);
+        expectedOutput = Arrays.toString(expectedOutputArr).replaceAll("\\), ", ")\n");
+        String outputStr = output.toString().replaceAll("\\), ", ")\n");
+        
+        Assert.assertEquals(expectedOutput, outputStr);
     }
     
     private static class Brute implements Function<Point[], LineSegment[]> {

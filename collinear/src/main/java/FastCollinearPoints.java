@@ -2,6 +2,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.List;
 
 public class FastCollinearPoints {
@@ -60,25 +61,59 @@ public class FastCollinearPoints {
     private List<LineSegment> removeDupSegments(List<SegmentCandidate> segmentCandidates) {
         Collections.sort(segmentCandidates);
         
-        List<LineSegment> results = new ArrayList<LineSegment>();
-        SegmentCandidate prev = null;
-        for (int i = 0; i < segmentCandidates.size(); i++) {
+        List<LineSegment> results = new ArrayList<>();
+        
+        List<List<SegmentCandidate>> squashedCandidates = new ArrayList<List<SegmentCandidate>>();
+        for (int i=0; i<segmentCandidates.size(); i++) {
             SegmentCandidate candidate = segmentCandidates.get(i);
-            boolean isDup = false;
-            if (prev != null 
-                    && Double.compare(prev.slope, candidate.slope) == 0
-                    && Double.compare(prev.slope, prev.min.slopeTo(candidate.max)) == 0) {
-                isDup = true;
+        
+            int idx = binarySearch(squashedCandidates, candidate.slope);
+            List<SegmentCandidate> list;
+            if (idx < 0) {
+                list = new ArrayList<>();
+                squashedCandidates.add(list);
+            } else {
+                list = squashedCandidates.get(idx);
             }
             
-            prev = candidate;
-            if (isDup)
-                continue;
             
-            results.add(new LineSegment(candidate.min, candidate.max));
-        }
+            // TODO: we don't need this if idx<0
+            boolean dup = false;
+            for (int j=0; j<list.size(); j++) {
+                double slopeBetween = list.get(j).min.slopeTo(candidate.max);
+                if (Double.compare(slopeBetween, candidate.slope) == 0) {
+                    dup = true;
+                    break;
+                }
+            }
+            
+            if (!dup) {
+                list.add(candidate);
+                results.add(new LineSegment(candidate.min, candidate.max));
+            }
+        }       
 
         return results;
+    }
+
+    private int binarySearch(List<List<SegmentCandidate>> squashedCandidates, double slope) {
+        int low = 0;
+        int high = squashedCandidates.size() - 1;
+        while (low <= high) {
+            int mid = (low + high) >>> 1;
+            List<SegmentCandidate> midVal = squashedCandidates.get(mid);
+            
+            double iSlope = midVal.get(0).slope;
+            int cmp = Double.compare(iSlope, slope);
+
+            if (cmp < 0)
+                low = mid + 1;
+            else if (cmp > 0)
+                high = mid - 1;
+            else
+                return mid; // key found
+        }
+        return -(low + 1);  // key not found
     }
 
     private void findCollinears(Point origin, List<SegmentCandidate> segmentCandidates, ArrayList<Point> points) {
@@ -165,18 +200,12 @@ public class FastCollinearPoints {
             double slope1 = slope();
             double slope2 = o.slope();
 
-            int slopeComparison = Double.compare(slope1, slope2);            
-            if (slopeComparison == 0) {
-                double slopeBetween = o.min.slopeTo(o.max);
-                int slopeBetweenComparison = Double.compare(slopeBetween, slope1);
-                if (slopeBetweenComparison == 0) {
-                    return 0;
-                } else {
-                    return o.length - length;
-                }
-            }
-
-            return slopeComparison;
+            int slopeComparison = Double.compare(slope1, slope2);
+            if (slopeComparison != 0) {
+                return slopeComparison;
+            }            
+            
+            return o.length - length;
         }
 
         double slope() {
