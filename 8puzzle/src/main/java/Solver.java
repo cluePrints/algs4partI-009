@@ -50,7 +50,12 @@ public class Solver {
         @Override
         public int compareTo(SearchNode o) {
             Solver.mh++;
-            return (movesMadeAlready + board.manhattan()) - (o.movesMadeAlready + o.board.manhattan());
+            int dist = (movesMadeAlready + board.manhattan()) - (o.movesMadeAlready + o.board.manhattan());
+            if (dist != 0)
+                return dist;
+            
+            // if all is equal - prefer depth first
+            return -movesMadeAlready + o.movesMadeAlready;
         }
 
         @Override
@@ -62,6 +67,7 @@ public class Solver {
     private void trySolve(MinPQ<SearchNode> initialHeap, MinPQ<SearchNode> twinHeap) {
         SearchNode previousRegular = initialHeap.min();
         SearchNode previousTwin = twinHeap.min();
+        int steps = 0;
         while (true) {
             SearchNode regularNode = initialHeap.delMin();
             Board regular = regularNode.board;
@@ -82,17 +88,19 @@ public class Solver {
 
             previousRegular = doSearch(initialHeap, previousRegular, regularNode, regular);
 
-            SearchNode twinNode = twinHeap.delMin();
-            Board twin = twinNode.board;
-
-            delmin++;
-            isgoal++;
-            if (twin.isGoal()) {
-                solution = null;
-                solvable = false;
-                break;
+            if (steps % 10 == 0) {
+                SearchNode twinNode = twinHeap.delMin();
+                Board twin = twinNode.board;
+    
+                delmin++;
+                isgoal++;
+                if (twin.isGoal()) {
+                    solution = null;
+                    solvable = false;
+                    break;
+                }
+                previousTwin = doSearch(twinHeap, previousTwin, twinNode, twin);
             }
-            previousTwin = doSearch(twinHeap, previousTwin, twinNode, twin);
         }
     }
 
@@ -104,8 +112,8 @@ public class Solver {
                 boolean dup = false;
                 SearchNode toCheck = prevNode;
                 while (toCheck != null) {
-                    skipped++;
                     if (neighbour.equals(toCheck.board)) {
+                        skipped++;
                         dup = true;
                         break;
                     }

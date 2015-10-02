@@ -40,7 +40,6 @@ public class GenericSolverTest {
         System.out.println("Manhat: "  + Solver.mh);
         System.out.println("Neigh:  "  + Solver.nb);
         System.out.println("Total:  "  + (Solver.nb + Solver.mh + Solver.isgoal + solver.insert + solver.equals + solver.delmin));
-        Assert.assertTrue(Solver.insert < 212831);
         Assert.assertEquals(expectToBeSolvable, solver.isSolvable());
         Assert.assertEquals(expectedNumberOfMoves, solver.moves());
         if (expectToBeSolvable) {
