@@ -9,8 +9,6 @@ public class Board {
     private int manhattan = 0;
     private int hamming = 0;
     
-    public static long totalTimeSpent = 0;
-
     public Board(int[][] blocks) {
         int[][] blocksCopy = new int[blocks.length][];
         for (int i = 0; i < blocks.length; i++) {
@@ -104,6 +102,7 @@ public class Board {
         Board twin = new Board(blocks);
         twin.setBlockValue(idxFirst, valSecond);
         twin.setBlockValue(idxSecond, valFirst);
+        twin.calculateDistances(twin.blocks);
         return twin;
     }
 

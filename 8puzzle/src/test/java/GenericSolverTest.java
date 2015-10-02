@@ -32,13 +32,21 @@ public class GenericSolverTest {
     public void test() {
         String fullFileName = new File(fixturesDir, fileName).toString();
         Solver solver = PuzzleChecker.solveFile(fullFileName);
+        System.out.println("Skipped:"  + Solver.skipped);
+        System.out.println("Delmin: "  + Solver.delmin);
+        System.out.println("equals: "  + Solver.equals);
+        System.out.println("insert: "  + Solver.insert);
+        System.out.println("Isgoa:  "  + Solver.isgoal);
+        System.out.println("Manhat: "  + Solver.mh);
+        System.out.println("Neigh:  "  + Solver.nb);
+        System.out.println("Total:  "  + (Solver.nb + Solver.mh + Solver.isgoal + solver.insert + solver.equals + solver.delmin));
+        Assert.assertTrue(Solver.insert < 212831);
         Assert.assertEquals(expectToBeSolvable, solver.isSolvable());
         Assert.assertEquals(expectedNumberOfMoves, solver.moves());
         if (expectToBeSolvable) {
             Board initial = PuzzleChecker.initialBoard(fullFileName);
             Assert.assertEquals(initial, solver.solution().iterator().next());
         }
-        System.out.println("Spent calculating routes: " + Board.totalTimeSpent);
     }
     
     @Parameters(name="{0}")

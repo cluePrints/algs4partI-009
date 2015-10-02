@@ -5,6 +5,21 @@ public class Solver {
     private boolean solvable;
     private LinkedList<Board> solution;
 
+//    private static long mh;
+//    private static long equals;
+//    private static long skipped;
+//    private static long insert;
+//    private static long isgoal;
+//    private static long delmin;
+//    private static long nb;
+    public static long mh;
+    public static long equals;
+    public static long skipped;
+    public static long insert;
+    public static long isgoal;
+    public static long delmin;
+    public static long nb;
+
     public Solver(Board initial) {
         if (initial == null) {
             throw new NullPointerException();
@@ -20,7 +35,7 @@ public class Solver {
         trySolve(initialHeap, twinHeap);
     }
 
-    private static class SearchNode implements Comparable<SearchNode> {
+    private class SearchNode implements Comparable<SearchNode> {
         private int movesMadeAlready;
         private Board board;
         private SearchNode origin;
@@ -33,10 +48,11 @@ public class Solver {
         }
 
         @Override
-        public int compareTo(SearchNode o) {            
+        public int compareTo(SearchNode o) {
+            Solver.mh++;
             return (movesMadeAlready + board.manhattan()) - (o.movesMadeAlready + o.board.manhattan());
         }
-        
+
         @Override
         public String toString() {
             return movesMadeAlready + "+" + board.manhattan();
@@ -44,8 +60,8 @@ public class Solver {
     }
 
     private void trySolve(MinPQ<SearchNode> initialHeap, MinPQ<SearchNode> twinHeap) {
-        Board previousRegular = null;
-        Board previousTwin = null;
+        SearchNode previousRegular = initialHeap.min();
+        SearchNode previousTwin = twinHeap.min();
         while (true) {
             SearchNode regularNode = initialHeap.delMin();
             Board regular = regularNode.board;
@@ -58,38 +74,54 @@ public class Solver {
                     solution.addFirst(iterate.board);
                     iterate = iterate.origin;
                 }
-                return;
+                break;
             }
+
+            delmin++;
+            isgoal++;
+
+            previousRegular = doSearch(initialHeap, previousRegular, regularNode, regular);
 
             SearchNode twinNode = twinHeap.delMin();
             Board twin = twinNode.board;
+
+            delmin++;
+            isgoal++;
             if (twin.isGoal()) {
                 solution = null;
                 solvable = false;
-                return;
+                break;
             }
-
-            {
-                for (Board neighbour : regular.neighbors()) {
-                    if (neighbour.equals(previousRegular))
-                        continue;
-
-                    SearchNode candidate = new SearchNode(regularNode.movesMadeAlready + 1, neighbour, regularNode);
-                    
-                    initialHeap.insert(candidate);
-                }
-                previousRegular = regular;
-            }
-            {
-                for (Board neighbour : twin.neighbors()) {
-                    if (neighbour.equals(previousTwin))
-                        continue;
-                    
-                    twinHeap.insert(new SearchNode(twinNode.movesMadeAlready + 1, neighbour, twinNode));
-                }
-                previousTwin = twin;
-            }
+            previousTwin = doSearch(twinHeap, previousTwin, twinNode, twin);
         }
+    }
+
+    private SearchNode doSearch(MinPQ<SearchNode> heap, SearchNode prevNode, SearchNode currentNode, Board currentBoard) {
+        {
+            nb++;
+            for (Board neighbour : currentBoard.neighbors()) {
+                equals++;
+                boolean dup = false;
+                SearchNode toCheck = prevNode;
+                while (toCheck != null) {
+                    skipped++;
+                    if (neighbour.equals(toCheck.board)) {
+                        dup = true;
+                        break;
+                    }
+                    toCheck = toCheck.origin;
+                }
+                if (dup) {
+                    continue;
+                }
+
+                SearchNode candidate = new SearchNode(currentNode.movesMadeAlready + 1, neighbour, currentNode);
+                insert++;
+                heap.insert(candidate);
+            }
+            prevNode = currentNode;
+        }
+        return prevNode;
     }
 
     public boolean isSolvable() {
