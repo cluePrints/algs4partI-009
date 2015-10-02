@@ -59,8 +59,6 @@ public class FastCollinearPoints {
     }
 
     private List<LineSegment> removeDupSegments(List<SegmentCandidate> segmentCandidates) {
-        Collections.sort(segmentCandidates);
-        
         List<LineSegment> results = new ArrayList<>();
         
         List<List<SegmentCandidate>> squashedCandidates = new ArrayList<List<SegmentCandidate>>();
@@ -76,8 +74,6 @@ public class FastCollinearPoints {
                 list = squashedCandidates.get(idx);
             }
             
-            
-            // TODO: we don't need this if idx<0
             boolean dup = false;
             for (int j=0; j<list.size(); j++) {
                 double slopeBetween = list.get(j).min.slopeTo(candidate.max);

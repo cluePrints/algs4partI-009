@@ -89,7 +89,7 @@ public class SuiteTest {
         testOn("src/test/resources/test11_6.txt", new Fast(), "(1, 1) -> (1, 8)\n(6, 0) -> (6, 9)\n");
     }
     
-    @Test(timeout=5000)
+    @Test(timeout=15000)
     public void testPerfEiths() {
         int n=512;
         TreeSet<Point> points = new TreeSet<Point>();
@@ -101,7 +101,7 @@ public class SuiteTest {
         new FastCollinearPoints(points.toArray(new Point[0]));
         time = System.currentTimeMillis() - time;
         System.out.println(time);
-        Assert.assertTrue(time < 2000);
+        Assert.assertTrue("Spent " + time, time < 2000);
     }
     
     @Test
@@ -116,7 +116,7 @@ public class SuiteTest {
         StdRandom.shuffle(ptsParam);
         
         LineSegment[] segments = new FastCollinearPoints(ptsParam).segments();
-        Assert.assertEquals("[(6, 0) -> (1, 10), (31, 5) -> (13, 41)]", Arrays.toString(segments));
+        Assert.assertEquals("[(31, 5) -> (13, 41), (6, 0) -> (1, 10)]", Arrays.toString(segments));
     }
 
     private void addSegment(List<Point> points, String chain) {
