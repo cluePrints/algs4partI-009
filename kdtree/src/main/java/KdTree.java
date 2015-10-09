@@ -1,15 +1,17 @@
-import java.util.LinkedList;
 import edu.princeton.cs.algs4.Point2D;
 import edu.princeton.cs.algs4.RectHV;
 import edu.princeton.cs.algs4.StdOut;
 import java.util.ArrayList;
+import java.util.Collection;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Queue;
 
 public class KdTree {
+    private static final RectHV UNIVERSE = new RectHV(-1, -1, Double.MAX_VALUE, Double.MAX_VALUE);
     private int size;
     private KdNode root;
-    boolean debugEnabled = false;
+    private boolean debugEnabled = false;
 
     public boolean isEmpty() {
         return size == 0;
@@ -80,6 +82,9 @@ public class KdTree {
         if (p == null) {
             throw new NullPointerException();
         }
+        
+        if (root == null)
+            return false;
 
         KdNode parent = searchForParentAndPossiblyInsert(p, null);
         boolean result = parent != null && parent.point.distanceTo(p) == 0;
@@ -99,24 +104,30 @@ public class KdTree {
         if (root == null) {
             return new ArrayList<Point2D>(0);
         }
-
-        List<Point2D> results = new ArrayList<Point2D>();
+        
+        PrunningRule pruningRule = new IntersectsRect(rect);
+        Collection<Point2D> results = new ArrayList<Point2D>();
+        
         Queue<KdNodeWithBox> pointsToFollow = new LinkedList<KdNodeWithBox>();
-        pointsToFollow.add(new KdNodeWithBox(root, new RectHV(0, 0, 1, 1), 1));
+        pointsToFollow.add(new KdNodeWithBox(root, UNIVERSE, 1));
         while (!pointsToFollow.isEmpty()) {
             KdNodeWithBox currentItem = pointsToFollow.remove();
+            if (!pruningRule.allow(currentItem.rect)) {
+                printf("%s pruned.\n", currentItem.node.point);
+                continue;
+            }
+            
             if (rect.contains(currentItem.node.point)) {
                 results.add(currentItem.node.point);
                 printf("%s belongs to %s\n", currentItem.node.point, rect);
-            } else {
-                
             }
+            
             if (currentItem.level % 2 == 1) {
-                List<KdNodeWithBox> newPts = currentItem.splitVertically(rect);
+                List<KdNodeWithBox> newPts = currentItem.splitVertically(pruningRule);
                 printf("%s --> %s\n", currentItem, newPts);
                 pointsToFollow.addAll(newPts);
             } else {
-                List<KdNodeWithBox> newPts = currentItem.splitHorizontally(rect);
+                List<KdNodeWithBox> newPts = currentItem.splitHorizontally(pruningRule);
                 printf("%s --> %s\n", currentItem, newPts);
                 pointsToFollow.addAll(newPts);
             }
@@ -128,9 +139,47 @@ public class KdTree {
     public Point2D nearest(Point2D p) {
         if (p == null) {
             throw new NullPointerException();
+        }        
+        
+        printf("Looking for nearest to %s.\n", p);
+        if (root == null) {
+            return null;
         }
         
-        throw new IllegalStateException();
+        Point2D result = root.point;
+        double bestDistance = result.distanceTo(p);
+        PrunningRule pruningRule = new Closer(bestDistance, p);
+        
+        Queue<KdNodeWithBox> pointsToFollow = new LinkedList<KdNodeWithBox>();
+        pointsToFollow.add(new KdNodeWithBox(root, UNIVERSE, 1));
+        while (!pointsToFollow.isEmpty()) {
+            KdNodeWithBox currentItem = pointsToFollow.remove();
+            if (!pruningRule.allow(currentItem.rect)) {
+                printf("%s pruned.\n", currentItem.node.point);
+                continue;
+            }
+            
+            bestDistance = result.distanceTo(p);
+            double newDist = currentItem.node.point.distanceTo(p);
+            pruningRule = new Closer(bestDistance, p);
+            if (bestDistance > newDist) {
+                result = currentItem.node.point;
+                bestDistance = newDist;
+                printf("now nearest is %s (%s)\n", result, bestDistance);
+            }
+            
+            if (currentItem.level % 2 == 1) {
+                List<KdNodeWithBox> newPts = currentItem.splitVertically(pruningRule);
+                printf("%s --> %s\n", currentItem, newPts);
+                pointsToFollow.addAll(newPts);
+            } else {
+                List<KdNodeWithBox> newPts = currentItem.splitHorizontally(pruningRule);
+                printf("%s --> %s\n", currentItem, newPts);
+                pointsToFollow.addAll(newPts);
+            }
+        }
+        
+        return result;
     }
     
     private void printf(String format, Object...args) {
@@ -139,6 +188,7 @@ public class KdTree {
         
         StdOut.printf(format, args);
     }
+    
     
     private class KdNodeWithBox {
         private KdNode node;
@@ -154,21 +204,20 @@ public class KdTree {
             checkY();
         }
         
-        public List<KdNodeWithBox> splitVertically(RectHV target) {
+        public List<KdNodeWithBox> splitVertically(PrunningRule rule) {
             printf("%s is being split vertically by %s\n", rect, node.point.x());
             ArrayList<KdNodeWithBox> result = new ArrayList<KdTree.KdNodeWithBox>(2);
             
-            double x = checkX();
             if (node.left != null) {
-                RectHV newRect = new RectHV(rect.xmin(), rect.ymin(), x,           rect.ymax());
-                if (newRect.intersects(target)) {
+                RectHV newRect = new RectHV(rect.xmin(), rect.ymin(), node.point.x(),           rect.ymax());
+                if (rule.allow(newRect)) {
                     result.add(new KdNodeWithBox(node.left, newRect, level + 1));
                 }
             }
             
             if (node.right != null) {
-                RectHV newRect = new RectHV(x,           rect.ymin(), rect.xmax(), rect.ymax());
-                if (newRect.intersects(target)) {
+                RectHV newRect = new RectHV(node.point.x(),           rect.ymin(), rect.xmax(), rect.ymax());
+                if (rule.allow(newRect)) {
                     result.add(new KdNodeWithBox(node.right, newRect, level + 1));
                 }
             }
@@ -188,22 +237,22 @@ public class KdTree {
             return x;
         }
         
-        public List<KdNodeWithBox> splitHorizontally(RectHV target) {
+        public List<KdNodeWithBox> splitHorizontally(PrunningRule rule) {
             printf("%s is being split horizontally by %s\n", rect, node.point.y());
             ArrayList<KdNodeWithBox> result = new ArrayList<KdTree.KdNodeWithBox>(2);
             
-            double y = checkY();
+            double y = node.point.y();
             
             if (node.left != null) {
                 RectHV newRect = new RectHV(rect.xmin(), rect.ymin(), rect.xmax(), y);
-                if (newRect.intersects(target)) {
+                if (rule.allow(newRect)) {
                     result.add(new KdNodeWithBox(node.left, newRect, level + 1));
                 }
             }
             
             if (node.right != null) {
                 RectHV newRect = new RectHV(rect.xmin(), y, rect.xmax(), rect.ymax());
-                if (newRect.intersects(target)) {
+                if (rule.allow(newRect)) {
                     result.add(new KdNodeWithBox(node.right, newRect, level + 1));
                 }
             }
@@ -225,7 +274,50 @@ public class KdTree {
 
         @Override
         public String toString() {
-            return "KdNodeWithBox [rect=" + rect + "]";
+            return ("Box [rect=" + rect 
+                    + ", point=" + node.point 
+                    + ", l=" + (node.left == null ? "null" : ".") 
+                    + ", r=" + (node.right == null ? "null" : ".")  + "]"
+                    )
+                    .replaceAll(String.valueOf(Double.MIN_VALUE), "min")
+                    .replaceAll(String.valueOf(Double.MAX_VALUE), "MAX");
+        }
+    }
+    
+    private static interface PrunningRule {
+        boolean allow(RectHV newRect);
+    }
+    
+    private static class IntersectsRect implements PrunningRule {
+        private final RectHV target;
+
+        private IntersectsRect(RectHV target) {
+            super();
+            this.target = target;
+        }
+        
+        public final boolean allow(RectHV newRect) {
+            return target.intersects(newRect);
+        }
+    }
+    
+    private class Closer implements PrunningRule {
+        private final double bestDistance;
+        private final Point2D targetPoint;
+        
+        private Closer(double bestDistance, Point2D targetPoint) {
+            super();
+            this.bestDistance = bestDistance;
+            this.targetPoint = targetPoint;
+        }
+
+        public final boolean allow(RectHV newRect) {
+            double newDist = newRect.distanceTo(targetPoint);
+            boolean result = newDist <= bestDistance;
+            if (!result) {
+                printf("%s was pruned. (%s > %s).\n", newRect, newDist, bestDistance);
+            }
+            return result;
         }
     }
     
