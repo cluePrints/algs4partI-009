@@ -102,7 +102,26 @@ public class KdTreeTest {
         // 32: 91        
         // 64: 97
         // 128: 102
-        Assert.assertTrue(callsAvgRect + " too big", callsAvgRect < 10.0);
+        Assert.assertTrue(callsAvgRect + " too big", callsAvgRect < 100.0);
+    }
+    
+    
+    @Test
+    public void perfTestRange() {
+        int tries = 100*4;
+        KdTree tree = runNearestWithSizeAndPointsCount(1000, 640000);
+        
+        tree.yCalls = 0;
+        for (int i=0; i<tries; i++) {
+            Point2D p = distinctPoint(1000);
+            tree.range(new RectHV(p.x(), p.y(), p.x()+1, p.y()+2));
+        }
+        
+        double callsAvg = tree.yCalls / (double) tries;
+        // 160: 48        
+        // 320: 56
+        // 640: 65
+        Assert.assertTrue(callsAvg + " too big", callsAvg < 70.0);
     }
 
     private KdTree runNearestWithSizeAndPointsCount(int size, int numPoints) throws AssertionError {

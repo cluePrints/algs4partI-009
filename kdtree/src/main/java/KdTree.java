@@ -3,9 +3,10 @@ import edu.princeton.cs.algs4.RectHV;
 import edu.princeton.cs.algs4.StdOut;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Comparator;
 import java.util.LinkedList;
 import java.util.List;
-import java.util.Queue;
+import java.util.PriorityQueue;
 
 public class KdTree {
     private static final RectHV UNIVERSE = new RectHV(-1, -1, Double.MAX_VALUE, Double.MAX_VALUE);
@@ -14,6 +15,7 @@ public class KdTree {
     private boolean debugEnabled = false;
     int pointDistanceSquaredToCalls = 0;
     int rectDistanceSquaredToCalls = 0;
+    int yCalls = 0;
     
     public boolean isEmpty() {
         return size == 0;
@@ -50,9 +52,14 @@ public class KdTree {
             }
             
             level++;
-            double diff = (level % 2 == 1) 
-                    ? currentPoint.point.x() - p.x() 
-                    : currentPoint.point.y() - p.y();
+            double diff;
+            if (level % 2 == 1) { 
+                diff = currentPoint.point.x() - p.x();
+            } else {
+                diff = currentPoint.point.y() - p.y();
+                yCalls++;
+            }
+                    
             printf("Examining %s(current) vs %s(inserted). Mode is %s\n", currentPoint, insertedNode, (level % 2 == 1 ? "|" : "-"));
             boolean weGoLeft = diff > 0;
             
@@ -116,14 +123,18 @@ public class KdTree {
         PrunningRule pruningRule = new IntersectsRect(rect);
         Collection<Point2D> results = new ArrayList<Point2D>();
         
-        LinkedList<KdNodeWithBox> pointsToFollow = new LinkedList<KdNodeWithBox>();
+        PriorityQueue<KdNodeWithBox> pointsToFollow = new PriorityQueue<KdNodeWithBox>(10, new Comparator<KdNodeWithBox>() {
+            public int compare(KdNodeWithBox o1, KdNodeWithBox o2) {
+                return o2.level - o1.level;
+            }
+        });
         pointsToFollow.add(new KdNodeWithBox(root, UNIVERSE, 1));
         while (!pointsToFollow.isEmpty()) {
             KdNodeWithBox currentItem = pointsToFollow.remove();
-            if (!pruningRule.allow(currentItem.rect)) {
-                printf("%s pruned.\n", currentItem.node.point);
-                continue;
-            }
+//            if (!pruningRule.allow(currentItem.rect)) {
+//                printf("%s pruned.\n", currentItem.node.point);
+//                continue;
+//            }
             
             if (rect.contains(currentItem.node.point)) {
                 results.add(currentItem.node.point);
@@ -133,11 +144,11 @@ public class KdTree {
             if (currentItem.level % 2 == 1) {
                 List<KdNodeWithBox> newPts = currentItem.splitVertically(pruningRule);
                 printf("%s --> %s\n", currentItem, newPts);
-                pointsToFollow.addAll(0, newPts);
+                pointsToFollow.addAll(newPts);
             } else {
                 List<KdNodeWithBox> newPts = currentItem.splitHorizontally(pruningRule);
                 printf("%s --> %s\n", currentItem, newPts);
-                pointsToFollow.addAll(0, newPts);
+                pointsToFollow.addAll(newPts);
             }
         }
         
@@ -263,10 +274,10 @@ public class KdTree {
         }
         
         public List<KdNodeWithBox> splitHorizontally(PrunningRule rule, Point2D target) {
-            printf("%s is being split horizontally by %s\n", rect, node.point.y());
-            ArrayList<KdNodeWithBox> result = new ArrayList<KdTree.KdNodeWithBox>(2);
-            
+            yCalls++;
             double y = node.point.y();
+            printf("%s is being split horizontally by %s\n", rect, y);
+            ArrayList<KdNodeWithBox> result = new ArrayList<KdTree.KdNodeWithBox>(2);
             
             if (node.left != null) {
                 RectHV newRect = new RectHV(rect.xmin(), rect.ymin(), rect.xmax(), y);
@@ -280,6 +291,7 @@ public class KdTree {
                 if (rule.allow(newRect)) {                    
                     KdNodeWithBox newBox = new KdNodeWithBox(node.right, newRect, level + 1);
                     if (target != null && y < target.y()) {
+                        yCalls++;
                         result.add(0, newBox);
                     } else {
                         result.add(newBox);
@@ -291,6 +303,7 @@ public class KdTree {
         }
 
         private double checkY() {
+            yCalls++;
             double y = node.point.y();
             
             if (y > rect.ymax()) {
