@@ -58,7 +58,6 @@ public class KdTreeTest {
         StdRandom.setSeed(1);
         int size =100 * 1000;
         int numPoints = 4000;
-        int numRectangles = 4000;
         KdTree tree = new KdTree();
         for (int i=0; i<numPoints; i++) {
             Point2D point = distinctPoint(size);
@@ -83,10 +82,30 @@ public class KdTreeTest {
         runNearestWithSizeAndPointsCount(1000*100, 4000);
         runNearestWithSizeAndPointsCount(1000*10, 4000);
         runNearestWithSizeAndPointsCount(1000, 4000);
-        runNearestWithSizeAndPointsCount(10, 4000);
+        runNearestWithSizeAndPointsCount(10, 4000);              
+    }
+    
+    @Test
+    public void perfTestNearest() {
+        int tries = 100*4;
+        KdTree tree = runNearestWithSizeAndPointsCount(1000, 32000);
+        
+        tree.pointDistanceSquaredToCalls = 0;
+        tree.rectDistanceSquaredToCalls = 0;
+        for (int i=0; i<tries; i++) {
+            Point2D p = distinctPoint(1000);
+            tree.nearest(p);
+        }
+        
+        double callsAvgPoint = tree.pointDistanceSquaredToCalls / (double) tries;
+        double callsAvgRect = tree.rectDistanceSquaredToCalls / (double) tries;
+        // 32: 91        
+        // 64: 97
+        // 128: 102
+        Assert.assertTrue(callsAvgRect + " too big", callsAvgRect < 10.0);
     }
 
-    private void runNearestWithSizeAndPointsCount(int size, int numPoints) throws AssertionError {
+    private KdTree runNearestWithSizeAndPointsCount(int size, int numPoints) throws AssertionError {
         Point2D target = distinctPoint(size);
         Point2D expectedNearest = distinctPoint(size);
         KdTree tree = new KdTree();
@@ -94,7 +113,7 @@ public class KdTreeTest {
         for (int i=0; i<numPoints; i++) {
             Point2D newPoint = distinctPoint(size);
             tree.insert(newPoint);
-            if (newPoint.distanceTo(target) < expectedNearest.distanceTo(target)) {
+            if (newPoint.distanceSquaredTo(target) < expectedNearest.distanceSquaredTo(target)) {
                 expectedNearest = newPoint;
             }
             try {
@@ -104,13 +123,15 @@ public class KdTreeTest {
                         String.format("Failed at step #%s. Target point was: %s  %s(newDist) vs %s(expectedDist)", 
                                 i,
                                 target,
-                                newPoint.distanceTo(target), 
-                                expectedNearest.distanceTo(target)), 
+                                newPoint.distanceSquaredTo(target), 
+                                expectedNearest.distanceSquaredTo(target)), 
                         expectedNearest, nearestResult);
             } catch (IllegalStateException ex) {
                 throw new AssertionError("Failed at step #" + i, ex);
             }
         }
+        
+        return tree;
     }
 
     private void containsTest(int nPoints, int gridSize) {

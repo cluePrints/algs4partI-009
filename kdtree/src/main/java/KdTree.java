@@ -12,6 +12,8 @@ public class KdTree {
     private int size;
     private KdNode root;
     private boolean debugEnabled = false;
+    int pointDistanceSquaredToCalls = 0;
+    int rectDistanceSquaredToCalls = 0;
     
     public boolean isEmpty() {
         return size == 0;
@@ -92,6 +94,7 @@ public class KdTree {
             return false;
 
         KdNode parent = searchForParentAndPossiblyInsert(p, null);
+        pointDistanceSquaredToCalls++;
         boolean result = parent != null && parent.point.distanceSquaredTo(p) == 0;
         printf("---\n");
         return result;
@@ -113,7 +116,7 @@ public class KdTree {
         PrunningRule pruningRule = new IntersectsRect(rect);
         Collection<Point2D> results = new ArrayList<Point2D>();
         
-        Queue<KdNodeWithBox> pointsToFollow = new LinkedList<KdNodeWithBox>();
+        LinkedList<KdNodeWithBox> pointsToFollow = new LinkedList<KdNodeWithBox>();
         pointsToFollow.add(new KdNodeWithBox(root, UNIVERSE, 1));
         while (!pointsToFollow.isEmpty()) {
             KdNodeWithBox currentItem = pointsToFollow.remove();
@@ -130,11 +133,11 @@ public class KdTree {
             if (currentItem.level % 2 == 1) {
                 List<KdNodeWithBox> newPts = currentItem.splitVertically(pruningRule);
                 printf("%s --> %s\n", currentItem, newPts);
-                pointsToFollow.addAll(newPts);
+                pointsToFollow.addAll(0, newPts);
             } else {
                 List<KdNodeWithBox> newPts = currentItem.splitHorizontally(pruningRule);
                 printf("%s --> %s\n", currentItem, newPts);
-                pointsToFollow.addAll(newPts);
+                pointsToFollow.addAll(0, newPts);
             }
         }
         
@@ -152,10 +155,11 @@ public class KdTree {
         }
         
         Point2D result = root.point;
+        pointDistanceSquaredToCalls++;
         double bestDistance = result.distanceSquaredTo(p);
         PrunningRule pruningRule = new Closer(bestDistance, p);
         
-        Queue<KdNodeWithBox> pointsToFollow = new LinkedList<KdNodeWithBox>();
+        LinkedList<KdNodeWithBox> pointsToFollow = new LinkedList<KdNodeWithBox>();
         pointsToFollow.add(new KdNodeWithBox(root, UNIVERSE, 1));
         while (!pointsToFollow.isEmpty()) {
             KdNodeWithBox currentItem = pointsToFollow.remove();
@@ -164,6 +168,7 @@ public class KdTree {
                 continue;
             }
             
+            pointDistanceSquaredToCalls+=2;
             bestDistance = result.distanceSquaredTo(p);
             double newDist = currentItem.node.point.distanceSquaredTo(p);
             pruningRule = new Closer(bestDistance, p);
@@ -174,13 +179,13 @@ public class KdTree {
             }
             
             if (currentItem.level % 2 == 1) {
-                List<KdNodeWithBox> newPts = currentItem.splitVertically(pruningRule);
+                List<KdNodeWithBox> newPts = currentItem.splitVertically(pruningRule, p);
                 printf("%s --> %s\n", currentItem, newPts);
-                pointsToFollow.addAll(newPts);
+                pointsToFollow.addAll(0, newPts);
             } else {
-                List<KdNodeWithBox> newPts = currentItem.splitHorizontally(pruningRule);
+                List<KdNodeWithBox> newPts = currentItem.splitHorizontally(pruningRule, p);
                 printf("%s --> %s\n", currentItem, newPts);
-                pointsToFollow.addAll(newPts);
+                pointsToFollow.addAll(0, newPts);
             }
         }
         
@@ -210,20 +215,31 @@ public class KdTree {
         }
         
         public List<KdNodeWithBox> splitVertically(PrunningRule rule) {
-            printf("%s is being split vertically by %s\n", rect, node.point.x());
+            return splitVertically(rule, null);
+        }
+        
+        public List<KdNodeWithBox> splitVertically(PrunningRule rule, Point2D target) {
+            double x = node.point.x();
+            
+            printf("%s is being split vertically by %s\n", rect, x);
             ArrayList<KdNodeWithBox> result = new ArrayList<KdTree.KdNodeWithBox>(2);
             
             if (node.left != null) {
-                RectHV newRect = new RectHV(rect.xmin(), rect.ymin(), node.point.x(),           rect.ymax());
+                RectHV newRect = new RectHV(rect.xmin(), rect.ymin(), x,           rect.ymax());
                 if (rule.allow(newRect)) {
                     result.add(new KdNodeWithBox(node.left, newRect, level + 1));
                 }
             }
             
             if (node.right != null) {
-                RectHV newRect = new RectHV(node.point.x(),           rect.ymin(), rect.xmax(), rect.ymax());
+                RectHV newRect = new RectHV(x,           rect.ymin(), rect.xmax(), rect.ymax());
                 if (rule.allow(newRect)) {
-                    result.add(new KdNodeWithBox(node.right, newRect, level + 1));
+                    KdNodeWithBox newBox = new KdNodeWithBox(node.right, newRect, level + 1);
+                    if (target != null && x < target.x()) {
+                        result.add(0, newBox);
+                    } else {
+                        result.add(newBox);
+                    }
                 }
             }
             
@@ -243,6 +259,10 @@ public class KdTree {
         }
         
         public List<KdNodeWithBox> splitHorizontally(PrunningRule rule) {
+            return splitHorizontally(rule, null);
+        }
+        
+        public List<KdNodeWithBox> splitHorizontally(PrunningRule rule, Point2D target) {
             printf("%s is being split horizontally by %s\n", rect, node.point.y());
             ArrayList<KdNodeWithBox> result = new ArrayList<KdTree.KdNodeWithBox>(2);
             
@@ -257,8 +277,13 @@ public class KdTree {
             
             if (node.right != null) {
                 RectHV newRect = new RectHV(rect.xmin(), y, rect.xmax(), rect.ymax());
-                if (rule.allow(newRect)) {
-                    result.add(new KdNodeWithBox(node.right, newRect, level + 1));
+                if (rule.allow(newRect)) {                    
+                    KdNodeWithBox newBox = new KdNodeWithBox(node.right, newRect, level + 1);
+                    if (target != null && y < target.y()) {
+                        result.add(0, newBox);
+                    } else {
+                        result.add(newBox);
+                    }
                 }
             }
             
@@ -317,6 +342,7 @@ public class KdTree {
         }
 
         public final boolean allow(RectHV newRect) {
+            rectDistanceSquaredToCalls++;
             double newDist = newRect.distanceSquaredTo(targetPoint);
             boolean result = newDist <= bestDistance;
             if (!result) {
