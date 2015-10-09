@@ -34,16 +34,12 @@ public class KdTreeTest {
     }
     
     @Test
-    public void testSize() {
+    public void testContainsDoesNotAffectSize() {
         KdTree tree = new KdTree();
         Assert.assertEquals(0, tree.size());
-        
-        tree.insert(new Point2D(1, 1));
-        Assert.assertEquals(1, tree.size());
-        tree.insert(new Point2D(1.0, 1.0));
-        tree.insert(new Point2D(0.5, 0));
-        tree.insert(new Point2D(1, 0.5));
-        Assert.assertEquals(3, tree.size());
+        tree.insert(new Point2D(0.11, 0.52));
+        tree.contains(new Point2D(0.11, 0.525));
+        Assert.assertEquals(1, tree.size());        
     }
     
     @Test(timeout=5000)
@@ -163,8 +159,8 @@ public class KdTreeTest {
         Set<Point2D> points = new HashSet<Point2D>(nPoints);
         KdTree tree = new KdTree();
         for (int i = 0; i < nPoints; i++) {
-            double x = 1/StdRandom.uniform(1, gridSize + 1);
-            double y = 1/StdRandom.uniform(1, gridSize + 1);
+            double x = StdRandom.uniform(0, gridSize + 1)/gridSize;
+            double y = StdRandom.uniform(0, gridSize + 1)/gridSize;
             Point2D point = new Point2D(x, y);
             points.add(point);
             tree.insert(point);

@@ -12,7 +12,7 @@ public class KdTree {
     private int size;
     private KdNode root;
     private boolean debugEnabled = false;
-
+    
     public boolean isEmpty() {
         return size == 0;
     }
@@ -26,7 +26,7 @@ public class KdTree {
         if (p == null) {
             throw new NullPointerException();
         }
-
+        
         KdNode insertedNode = new KdNode(p);
         if (root == null) {
             size++;
@@ -42,16 +42,17 @@ public class KdTree {
         KdNode currentPoint = root;
         int level = 0;
         while (true) {
+            if (currentPoint.point.equals(p)) {
+                printf("(!) Looks like we've found a match %s to %s\n", currentPoint, p);
+                return currentPoint;
+            }
+            
             level++;
             double diff = (level % 2 == 1) 
                     ? currentPoint.point.x() - p.x() 
                     : currentPoint.point.y() - p.y();
             printf("Examining %s(current) vs %s(inserted). Mode is %s\n", currentPoint, insertedNode, (level % 2 == 1 ? "|" : "-"));
             boolean weGoLeft = diff > 0;
-            if (currentPoint.point.equals(p)) {
-                printf("(!) Looks like we've found a match %s to %s\n", currentPoint, p);
-                return currentPoint;
-            }
             
             if (weGoLeft) {
                 if (currentPoint.left != null) {
@@ -60,7 +61,9 @@ public class KdTree {
                 } else {
                     currentPoint.left = insertedNode;
                     printf("-> nothing to the left, we are done\n");
-                    size++;
+                    if (insertedNode != null) {
+                        size++;
+                    }
                     return currentPoint;
                 }
             } else {
@@ -70,7 +73,9 @@ public class KdTree {
                 } else {
                     currentPoint.right = insertedNode;
                     printf("-> nothing to the right, we are done\n");
-                    size++;
+                    if (insertedNode != null) {                        
+                        size++;
+                    }
                     return currentPoint;
                 }
             }
@@ -87,7 +92,7 @@ public class KdTree {
             return false;
 
         KdNode parent = searchForParentAndPossiblyInsert(p, null);
-        boolean result = parent != null && parent.point.distanceTo(p) == 0;
+        boolean result = parent != null && parent.point.distanceSquaredTo(p) == 0;
         printf("---\n");
         return result;
     }
@@ -147,7 +152,7 @@ public class KdTree {
         }
         
         Point2D result = root.point;
-        double bestDistance = result.distanceTo(p);
+        double bestDistance = result.distanceSquaredTo(p);
         PrunningRule pruningRule = new Closer(bestDistance, p);
         
         Queue<KdNodeWithBox> pointsToFollow = new LinkedList<KdNodeWithBox>();
@@ -159,8 +164,8 @@ public class KdTree {
                 continue;
             }
             
-            bestDistance = result.distanceTo(p);
-            double newDist = currentItem.node.point.distanceTo(p);
+            bestDistance = result.distanceSquaredTo(p);
+            double newDist = currentItem.node.point.distanceSquaredTo(p);
             pruningRule = new Closer(bestDistance, p);
             if (bestDistance > newDist) {
                 result = currentItem.node.point;
@@ -284,7 +289,7 @@ public class KdTree {
         }
     }
     
-    private static interface PrunningRule {
+    private interface PrunningRule {
         boolean allow(RectHV newRect);
     }
     
@@ -312,7 +317,7 @@ public class KdTree {
         }
 
         public final boolean allow(RectHV newRect) {
-            double newDist = newRect.distanceTo(targetPoint);
+            double newDist = newRect.distanceSquaredTo(targetPoint);
             boolean result = newDist <= bestDistance;
             if (!result) {
                 printf("%s was pruned. (%s > %s).\n", newRect, newDist, bestDistance);
